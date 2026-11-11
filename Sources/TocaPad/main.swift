@@ -14,6 +14,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menu: MenuController!
     private var watcher: TrackpadWatcher?
     private let updates = UpdateChecker(appName: "TocaPad", repo: "getguruhat/tocapad-macos")
+    private var launchedAtLogin = false
+
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        let event = NSAppleEventManager.shared().currentAppleEvent
+        launchedAtLogin = event?.eventID == kAEOpenApplication
+            && event?.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         engine = EdgeEngine(settings: settings, status: status, hud: hud)
@@ -30,10 +37,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.status.refresh()
         })
 
+        // With the icon hidden, opening TocaPad by hand is the only way in, so show Settings,
+        // but not when it starts at login.
+        if !settings.showInMenuBar && !launchedAtLogin && ProcessInfo.processInfo.systemUptime > 180 {
+            DispatchQueue.main.async { self.menu.show(tab: .general) }
+        }
+
         // Trackpads stop sending after sleep; listen again on wake.
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self?.rescan() }
         }
+    }
+
+    /// Opening TocaPad again from Applications, Spotlight or the Dock shows Settings.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        menu.show(tab: .general)
+        return false
     }
 
     private func rescan() {
@@ -100,6 +119,10 @@ final class MenuController: NSObject {
         settings.$enabled.receive(on: DispatchQueue.main).sink { [weak self] _ in
             DispatchQueue.main.async { self?.updateItem() }
         }.store(in: &watchers)
+        settings.$showInMenuBar.receive(on: DispatchQueue.main).sink { [weak self] shown in
+            self?.item.isVisible = shown
+            if !shown { self?.item.button?.highlight(false) }
+        }.store(in: &watchers)
         // The About window sits below the menu's level, so the menu gets out of its way.
         NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)
             .sink { [weak self] note in
@@ -133,20 +156,27 @@ final class MenuController: NSObject {
 
     @objc private func toggle() { panel.isVisible ? close() : show() }
 
-    func show(page: MenuState.Page = .main) {
+    func show(tab: MenuState.Tab = .levels) {
         onOpen()
-        state.page = page
+        state.tab = tab
         state.trusted = Actions.trusted
-        guard let button = item.button, let buttonWindow = button.window else { return }
         hosting.layoutSubtreeIfNeeded()
         let size = hosting.fittingSize
-        let anchor = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
-        let screen = (buttonWindow.screen ?? NSScreen.main)?.visibleFrame ?? .zero
-        let x = min(max(anchor.midX - size.width / 2, screen.minX + 8), screen.maxX - size.width - 8)
-        panel.setFrame(NSRect(x: x, y: anchor.minY - 6 - size.height, width: size.width, height: size.height), display: true)
+        if let button = item.button, let buttonWindow = button.window, item.isVisible,
+           buttonWindow.occlusionState.contains(.visible) {
+            let anchor = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+            let screen = (buttonWindow.screen ?? NSScreen.main)?.visibleFrame ?? .zero
+            let x = min(max(anchor.midX - size.width / 2, screen.minX + 8), screen.maxX - size.width - 8)
+            panel.setFrame(NSRect(x: x, y: anchor.minY - 6 - size.height, width: size.width, height: size.height), display: true)
+            button.highlight(true)
+        } else {
+            // No icon to hang from (hidden in Settings or by macOS): top center of the screen.
+            let screen = (NSScreen.main ?? NSScreen.screens.first)?.visibleFrame ?? .zero
+            panel.setFrame(NSRect(x: screen.midX - size.width / 2, y: screen.maxY - 8 - size.height,
+                                  width: size.width, height: size.height), display: true)
+        }
         panel.orderFrontRegardless()
         panel.makeKey()
-        button.highlight(true)
         outsideClicks = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             self?.close()
         }
@@ -173,7 +203,7 @@ final class MenuController: NSObject {
         if open.runModal() == .OK, let url = open.url {
             settings.corners[corner] = CornerAction(kind: .openApp, appPath: url.path)
         }
-        show(page: .settings)
+        show(tab: .corners)
     }
 
     private func fit() {

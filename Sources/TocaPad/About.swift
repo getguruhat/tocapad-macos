@@ -34,7 +34,7 @@ struct AboutView: View {
             }
             Text("TocaPad").font(.title2).bold()
             Text("Version \(appVersion)").foregroundStyle(.secondary)
-            Text("Slide the trackpad edges for volume and brightness.")
+            Text("Slide the trackpad edges for volume and brightness, and double-tap a corner for media keys, Mission Control, apps and shortcuts.")
                 .font(.headline)
                 .multilineTextAlignment(.center)
             Text("A GuruHat tool").font(.subheadline).foregroundStyle(.secondary)

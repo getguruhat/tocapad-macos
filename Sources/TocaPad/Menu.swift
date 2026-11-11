@@ -1,12 +1,32 @@
 import SwiftUI
 import AppKit
 
-/// Which page the menu shows, and the shortcut being recorded. (No @State without the
+/// Which tab the menu shows, and the shortcut being recorded. (No @State without the
 /// macro plugin, so this lives in an object.)
 final class MenuState: ObservableObject {
-    enum Page { case main, settings }
+    /// The menu's tabs, one at a time so the panel fits on a small screen.
+    enum Tab: String, CaseIterable, Identifiable {
+        case levels, edges, corners, general
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .levels: "Levels"
+            case .edges: "Edges"
+            case .corners: "Corners"
+            case .general: "General"
+            }
+        }
+        var symbol: String {
+            switch self {
+            case .levels: "slider.vertical.3"
+            case .edges: "rectangle.portrait.lefthalf.inset.filled"
+            case .corners: "square.grid.2x2"
+            case .general: "gearshape"
+            }
+        }
+    }
 
-    @Published var page: Page = .main
+    @Published var tab: Tab = .levels
     @Published var recording: Corner?
     @Published var trusted = Actions.trusted
     var chooseApp: (Corner) -> Void = { _ in }
@@ -59,7 +79,15 @@ struct MenuContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if state.page == .main { mainPage } else { settingsPage }
+            header
+            notices
+            tabBar
+            switch state.tab {
+            case .levels: levelsTab
+            case .edges: edgesTab
+            case .corners: cornersTab
+            case .general: generalTab
+            }
         }
         .padding(12)
         .frame(width: 340)
@@ -69,10 +97,10 @@ struct MenuContent: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    // MARK: Main page
+    // MARK: Levels
 
-    @ViewBuilder private var mainPage: some View {
-        header
+    /// A missing trackpad or a new version, shown above every tab.
+    @ViewBuilder private var notices: some View {
         if status.trackpads == 0 {
             Label("No trackpad found. TocaPad needs a built-in or Magic Trackpad.", systemImage: "exclamationmark.triangle.fill")
                 .font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.orange)
@@ -91,6 +119,9 @@ struct MenuContent: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    @ViewBuilder private var levelsTab: some View {
         levels
         VStack(alignment: .leading, spacing: 10) {
             row("Haptic feedback", "A light tick as you slide.", "waveform", $settings.haptics)
@@ -98,26 +129,6 @@ struct MenuContent: View {
             slider("Sensitivity", String(format: "%.1f×", settings.sensitivity), $settings.sensitivity, 0.5...3)
         }
         .card()
-        Button { state.page = .settings } label: {
-            HStack(spacing: 10) {
-                icon("gearshape.fill")
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Settings").font(.system(size: 13, weight: .medium))
-                    Text(cornerSummary).font(.system(size: 11)).foregroundStyle(Theme.secondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.secondary)
-            }
-            .card()
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var cornerSummary: String {
-        let count = settings.corners.values.filter(\.isSet).count
-        let corners = count == 0 ? "no corner taps" : count == 1 ? "1 corner tap" : "\(count) corner taps"
-        return "Edges, cursor, \(corners), login"
     }
 
     private var header: some View {
@@ -232,27 +243,38 @@ struct MenuContent: View {
         .padding(.horizontal, 10)
     }
 
-    // MARK: Settings page
+    // MARK: Edges, Corners, General
 
-    @ViewBuilder private var settingsPage: some View {
-        HStack(spacing: 6) {
-            Button { state.stopRecording(); state.page = .main } label: { Image(systemName: "chevron.left") }
-                .buttonStyle(CircleButtonStyle())
-                .help("Back").accessibilityLabel("Back")
-                .keyboardShortcut("[", modifiers: .command)
-            HStack(spacing: 6) {
-                Image(systemName: "gearshape.fill").font(.system(size: 13)).foregroundStyle(Theme.accent)
-                Text("Settings").font(.system(size: 13, weight: .semibold))
-                Spacer()
-                Text("Version \(appVersion)").font(.system(size: 11)).foregroundStyle(Theme.secondary)
+    /// The tabs, like a segmented control in the menu's own look.
+    private var tabBar: some View {
+        HStack(spacing: 2) {
+            ForEach(Array(MenuState.Tab.allCases.enumerated()), id: \.element) { index, tab in
+                let selected = state.tab == tab
+                Button {
+                    state.stopRecording()
+                    state.tab = tab
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: tab.symbol).font(.system(size: 10, weight: .semibold))
+                        Text(tab.title).font(.system(size: 12, weight: .medium)).lineLimit(1).fixedSize()
+                    }
+                    .foregroundStyle(selected ? Color.white : Theme.secondary)
+                    .frame(maxWidth: .infinity).frame(height: 26)
+                    .background(Capsule().fill(selected ? Theme.accent : Color.clear))
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut(KeyEquivalent(Character(String(index + 1))), modifiers: .command)
+                .accessibilityLabel(tab.title)
+                .accessibilityAddTraits(selected ? .isSelected : [])
             }
-            .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity, minHeight: 30)
-            .background(Capsule().fill(Theme.card))
-            .overlay(Capsule().strokeBorder(Theme.stroke))
         }
+        .padding(2)
+        .background(Capsule().fill(Theme.card))
+        .overlay(Capsule().strokeBorder(Theme.stroke))
+    }
 
-        section("Sliding")
+    @ViewBuilder private var edgesTab: some View {
         VStack(alignment: .leading, spacing: 10) {
             sideRow("Volume", "speaker.wave.2.fill", $settings.volumeSide)
             Divider()
@@ -268,8 +290,9 @@ struct MenuContent: View {
             Text("Hold ⇧⌥ while sliding for fine steps.").font(.system(size: 11)).foregroundStyle(Theme.secondary)
         }
         .card()
+    }
 
-        section("Corner taps")
+    @ViewBuilder private var cornersTab: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Double-tap a corner of the trackpad to run an action.")
                 .font(.system(size: 12)).foregroundStyle(Theme.secondary)
@@ -295,15 +318,20 @@ struct MenuContent: View {
             }
         }
         .card()
+    }
 
-        section("Startup")
-        HStack(spacing: 10) {
-            icon("power")
-            Text("Open at login").font(.system(size: 13, weight: .medium))
-            Spacer()
-            Toggle("Open at login", isOn: $settings.openAtLogin).toggleStyle(AccentSwitch()).labelsHidden()
+    @ViewBuilder private var generalTab: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            row("Open at login", "Starts when you log in.", "power", $settings.openAtLogin)
+            Divider()
+            row("Show in menu bar",
+                settings.showInMenuBar ? "The TocaPad icon at the top of the screen."
+                                       : "Hidden. Open TocaPad from Applications to come back here.",
+                "menubar.rectangle", $settings.showInMenuBar)
         }
-        .card(padding: 10)
+        .card()
+        Text("TocaPad \(appVersion)").font(.system(size: 11)).foregroundStyle(Theme.secondary)
+            .frame(maxWidth: .infinity)
     }
 
     private var needsAccess: Bool {
@@ -361,11 +389,6 @@ struct MenuContent: View {
     }
 
     // MARK: Parts
-
-    private func section(_ title: String) -> some View {
-        Text(title).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.secondary)
-            .textCase(.uppercase).padding(.leading, 6).padding(.top, 4)
-    }
 
     private func icon(_ symbol: String) -> some View {
         Image(systemName: symbol)

@@ -9,7 +9,7 @@ Slide one finger up or down the **right edge** of the trackpad for volume, or th
 edge** for brightness. A level appears at the top right of the screen as you slide, like
 the one the keyboard keys show.
 
-<img src="docs/menu.png" width="340" alt="TocaPad's menu: brightness at 78% and volume at 62% drawn up the edges of a small trackpad, haptic feedback, sensitivity and a Settings link"> <img src="docs/settings-dark.png" width="340" alt="TocaPad's Settings in dark mode: sliding options, four corner taps laid out like the trackpad, and open at login">
+<img src="docs/menu.png" width="340" alt="TocaPad's menu on the Levels tab: brightness at 78% and volume at 62% drawn up the edges of a small trackpad, with haptic feedback and sensitivity, and tabs for Edges, Corners and General"> <img src="docs/settings-dark.png" width="340" alt="TocaPad's Edges tab in dark mode: an edge for volume and for brightness, ignore while typing, bottom quarter only, cursor freeze and edge width">
 
 ## What it does
 
@@ -31,6 +31,9 @@ the one the keyboard keys show.
 - **Bottom quarter only:** only the lower part of the left and right edges responds, if you
   rest your fingers on the trackpad's sides.
 - **Sensitivity** and **edge width** sliders, and **Open at login**.
+- **Hide the menu bar icon** if you like: TocaPad keeps working, and opening it again from
+  Applications or Spotlight shows its settings.
+- The menu has four tabs: **Levels**, **Edges**, **Corners** and **General** (⌘1–⌘4).
 - Works with the built-in trackpad and a Magic Trackpad, including one connected after
   TocaPad starts.
 

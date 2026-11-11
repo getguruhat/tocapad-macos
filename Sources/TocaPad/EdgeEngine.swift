@@ -37,6 +37,8 @@ final class Settings: ObservableObject {
     @Published var edgeWidth: Double { didSet { d.set(edgeWidth, forKey: "edgeWidth") } }
     /// Ignores edge touches that start just after a key press, so a resting palm can't slide.
     @Published var typingGuard: Bool { didSet { d.set(typingGuard, forKey: "typingGuard") } }
+    /// Off hides the menu bar icon; opening TocaPad again from Applications shows Settings.
+    @Published var showInMenuBar: Bool { didSet { d.set(showInMenuBar, forKey: "showInMenuBar") } }
     @Published var openAtLogin: Bool {
         didSet {
             guard openAtLogin != (SMAppService.mainApp.status == .enabled) else { return }
@@ -49,7 +51,7 @@ final class Settings: ObservableObject {
         d = defaults
         d.register(defaults: ["enabled": true, "haptics": true, "cursorFreeze": true,
                               "bottomQuarter": false, "swapSides": false, "sensitivity": 1.3, "edgeWidth": 0.12,
-                              "typingGuard": true])
+                              "typingGuard": true, "showInMenuBar": true])
         enabled = d.bool(forKey: "enabled")
         haptics = d.bool(forKey: "haptics")
         var corners: [Corner: CornerAction] = [:]
@@ -73,6 +75,7 @@ final class Settings: ObservableObject {
         sensitivity = d.double(forKey: "sensitivity")
         edgeWidth = d.double(forKey: "edgeWidth")
         typingGuard = d.bool(forKey: "typingGuard")
+        showInMenuBar = d.bool(forKey: "showInMenuBar")
         openAtLogin = SMAppService.mainApp.status == .enabled
     }
 }

@@ -49,10 +49,12 @@ enum Snapshot {
         }
 
         DispatchQueue.main.async {
-            for (page, prefix) in [(MenuState.Page.main, "menu"), (.settings, "settings")] {
+            let pages: [(MenuState.Tab, String)] = [
+                (.levels, "menu"), (.edges, "settings"), (.corners, "settings-corners"), (.general, "settings-general")]
+            for (tab, prefix) in pages {
                 for (suffix, look) in [("", NSAppearance.Name.aqua), ("-dark", .darkAqua)] {
                     let state = MenuState(settings: settings)
-                    state.page = page
+                    state.tab = tab
                     state.trusted = true
                     save(NSHostingView(rootView: MenuContent(settings: settings, status: status, updates: updates, state: state)),
                          prefix + suffix, appearance: look)

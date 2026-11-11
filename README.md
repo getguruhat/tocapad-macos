@@ -9,7 +9,7 @@ Slide one finger up or down the **right edge** of the trackpad for volume, or th
 edge** for brightness. A level appears at the top right of the screen as you slide, like
 the one the keyboard keys show.
 
-<img src="docs/menu.png" width="340" alt="TocaPad's menu: brightness at 78% and volume at 62%, switches for haptic feedback, quick mute, cursor freeze, bottom quarter only and swap sides, and sliders for sensitivity and edge width"> <img src="docs/menu-dark.png" width="340" alt="The same menu in dark mode">
+<img src="docs/menu.png" width="340" alt="TocaPad's menu: brightness at 78% and volume at 62% drawn up the edges of a small trackpad, haptic feedback, sensitivity and a Settings link"> <img src="docs/settings-dark.png" width="340" alt="TocaPad's Settings in dark mode: sliding options, four corner taps laid out like the trackpad, and open at login">
 
 ## What it does
 
@@ -18,7 +18,10 @@ the one the keyboard keys show.
 - **Haptic feedback:** a light tick under your finger at each step, on Force Touch trackpads.
 - **Cursor freeze:** the pointer stays where it was while you slide.
 - **Fine steps:** hold Shift-Option while sliding.
-- **Quick mute** (off by default): double-tap the very top-right corner of the trackpad.
+- **Corner taps** (all off by default): double-tap a corner of the trackpad to mute, play or
+  pause, skip a track, open Mission Control, show the desktop, lock the screen, take a
+  screenshot, open an app, or press a keyboard shortcut you record. With tap to click on,
+  the same double tap is also a double-click where the pointer is.
   With tap to click on, a double-click on something in that corner mutes too, which is why
   it starts off.
 - **Bottom quarter only:** only the lower part of the edges responds, if you rest your
@@ -50,7 +53,9 @@ The app isn't notarized by Apple, so macOS blocks the first launch. Open **Syste
 Privacy & Security** and click **Open Anyway** (once). TocaPad is open source: you can read
 every line or build it yourself.
 
-TocaPad needs no permissions: no Accessibility, no Input Monitoring.
+Sliding needs no permissions. Media keys and keyboard shortcuts on a corner are sent as key
+presses, which macOS only allows with Accessibility access; TocaPad asks for it the first time
+you choose one of those, and nothing else needs it.
 
 ## Privacy
 
@@ -77,6 +82,8 @@ TocaPad.app/Contents/MacOS/TocaPad --snapshot docs   # redraw the README picture
 | `SystemControls.swift` | Volume and mute through Core Audio; brightness through DisplayServices |
 | `HUD.swift` | The level shown while sliding |
 | `main.swift` | The menu bar item and its panel |
+| `Menu.swift` | The menu and Settings pages |
+| `Corners.swift` | Corner taps: the corners, the actions and running them |
 | `About.swift`, `UpdateChecker.swift`, `Snapshot.swift` | About window, daily update check, README pictures |
 
 ## License

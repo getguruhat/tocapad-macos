@@ -9,7 +9,14 @@ final class Settings: ObservableObject {
 
     @Published var enabled: Bool { didSet { d.set(enabled, forKey: "enabled") } }
     @Published var haptics: Bool { didSet { d.set(haptics, forKey: "haptics") } }
-    @Published var quickMute: Bool { didSet { d.set(quickMute, forKey: "quickMute") } }
+    /// What a double tap in each corner does. Saved as JSON, one key per corner.
+    @Published var corners: [Corner: CornerAction] {
+        didSet {
+            for corner in Corner.allCases {
+                d.set(try? JSONEncoder().encode(corners[corner] ?? .none), forKey: "corner." + corner.rawValue)
+            }
+        }
+    }
     @Published var cursorFreeze: Bool { didSet { d.set(cursorFreeze, forKey: "cursorFreeze") } }
     @Published var bottomQuarter: Bool { didSet { d.set(bottomQuarter, forKey: "bottomQuarter") } }
     @Published var swapSides: Bool { didSet { d.set(swapSides, forKey: "swapSides") } }
@@ -25,11 +32,22 @@ final class Settings: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         d = defaults
-        d.register(defaults: ["enabled": true, "haptics": true, "quickMute": false, "cursorFreeze": true,
+        d.register(defaults: ["enabled": true, "haptics": true, "cursorFreeze": true,
                               "bottomQuarter": false, "swapSides": false, "sensitivity": 1.3, "edgeWidth": 0.12])
         enabled = d.bool(forKey: "enabled")
         haptics = d.bool(forKey: "haptics")
-        quickMute = d.bool(forKey: "quickMute")
+        var corners: [Corner: CornerAction] = [:]
+        for corner in Corner.allCases {
+            if let data = d.data(forKey: "corner." + corner.rawValue),
+               let action = try? JSONDecoder().decode(CornerAction.self, from: data) {
+                corners[corner] = action
+            }
+        }
+        // 0.1.0 had a single Quick mute switch for the top-right corner.
+        if corners[.topRight] == nil, d.bool(forKey: "quickMute") {
+            corners[.topRight] = CornerAction(kind: .mute)
+        }
+        self.corners = corners
         cursorFreeze = d.bool(forKey: "cursorFreeze")
         bottomQuarter = d.bool(forKey: "bottomQuarter")
         swapSides = d.bool(forKey: "swapSides")
@@ -83,7 +101,7 @@ final class EdgeEngine {
     private var tracks: [UnsafeMutableRawPointer: Track] = [:]
     /// Trackpads that had two or more fingers down; ignored until every finger lifts.
     private var blocked: Set<UnsafeMutableRawPointer> = []
-    private var lastTap: (time: Double, x: Float, y: Float)?
+    private var lastTap: (time: Double, x: Float, y: Float, corner: Corner)?
     private var frozen = false
 
     /// Steps a slide snaps a haptic tick to, like the 16 steps of the volume keys.
@@ -187,22 +205,38 @@ final class EdgeEngine {
         }
     }
 
-    /// A quick tap that barely moved, in the very top-right corner. A second one within 0.4s
-    /// at the same spot toggles mute. Off by default: with tap to click on, a double-click
-    /// on something in that corner of the trackpad is the same gesture.
+    /// A quick tap that barely moved, in a corner that has an action. A second one within
+    /// 0.4s at the same spot runs it. With tap to click on, the same double tap is also a
+    /// double-click wherever the pointer is, which is why every corner starts empty.
     private func checkTap(_ t: Track, time: Double) {
-        guard settings.quickMute, !t.active, time - t.startTime < 0.25, t.moved < 0.015,
-              t.startX > 0.9, t.startY > 0.85 else { lastTap = nil; return }
-        if let first = lastTap, time - first.time < 0.4,
+        guard !t.active, time - t.startTime < 0.25, t.moved < 0.015,
+              let corner = Corner.at(x: t.startX, y: t.startY),
+              let action = settings.corners[corner], action.isSet else { lastTap = nil; return }
+        if let first = lastTap, first.corner == corner, time - first.time < 0.4,
            abs(t.startX - first.x) < 0.04, abs(t.startY - first.y) < 0.04 {
             lastTap = nil
+            run(action)
+        } else {
+            lastTap = (time, t.startX, t.startY, corner)
+        }
+    }
+
+    private func run(_ action: CornerAction) {
+        if action.kind == .mute {
             let muted = !Volume.isMuted
             Volume.isMuted = muted
             status.muted = muted
-            if settings.haptics { NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now) }
             hud.show(kind: .volume, value: Volume.level, muted: muted, unavailable: !Volume.isAdjustable)
-        } else {
-            lastTap = (time, t.startX, t.startY)
+            return
+        }
+        if action.needsAccessibility && !Actions.trusted {
+            hud.message(symbol: "lock.shield", title: "TocaPad needs Accessibility access")
+            return
+        }
+        Actions.run(action)
+        // Actions that open something on screen speak for themselves.
+        if [.playPause, .nextTrack, .previousTrack, .shortcut].contains(action.kind) {
+            hud.message(symbol: action.symbol, title: action.title)
         }
     }
 

@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Saves the menu (light and dark), the on-screen level and the About window as PNGs, at
+/// Saves the menu and Settings (light and dark), the on-screen level and the About window as PNGs, at
 /// 2x, with sample values so the pictures don't show this Mac's own levels.
 enum Snapshot {
     static func run(to folder: URL) -> Never {
@@ -20,7 +20,8 @@ enum Snapshot {
         settings.enabled = true
         settings.haptics = true
         settings.cursorFreeze = true
-        settings.quickMute = false
+        settings.corners = [.topRight: CornerAction(kind: .mute), .topLeft: CornerAction(kind: .missionControl),
+                            .bottomRight: CornerAction(kind: .playPause)]
         settings.bottomQuarter = false
         settings.swapSides = false
         let updates = UpdateChecker(appName: "TocaPad", repo: "getguruhat/tocapad-macos")
@@ -47,8 +48,14 @@ enum Snapshot {
         }
 
         DispatchQueue.main.async {
-            for (name, look) in [("menu", NSAppearance.Name.aqua), ("menu-dark", .darkAqua)] {
-                save(NSHostingView(rootView: MenuContent(settings: settings, status: status, updates: updates)), name, appearance: look)
+            for (page, prefix) in [(MenuState.Page.main, "menu"), (.settings, "settings")] {
+                for (suffix, look) in [("", NSAppearance.Name.aqua), ("-dark", .darkAqua)] {
+                    let state = MenuState(settings: settings)
+                    state.page = page
+                    state.trusted = true
+                    save(NSHostingView(rootView: MenuContent(settings: settings, status: status, updates: updates, state: state)),
+                         prefix + suffix, appearance: look)
+                }
             }
             let hud = NSHostingView(rootView: HUDView(model: model)
                 .frame(width: 290, height: 64)

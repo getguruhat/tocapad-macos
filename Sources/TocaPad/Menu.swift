@@ -153,20 +153,24 @@ struct MenuContent: View {
                               value: status.volume,
                               note: !status.volumeAdjustable ? "Not adjustable" : status.muted ? "Muted" : nil,
                               color: Theme.accent)
-        let left = settings.swapSides ? volume : brightness
-        let right = settings.swapSides ? brightness : volume
+        // Readings read left to right in the order their edges sit on the pad.
+        let rank: [EdgeSide: Int] = [.left: 0, .top: 1, .bottom: 1, .off: 1, .right: 2]
+        let placed = [(brightness, settings.brightnessSide), (volume, settings.volumeSide)]
+        let ordered = placed.sorted { rank[$0.1]! < rank[$1.1]! }
+        let first = ordered[0], second = ordered[1]
         return VStack(spacing: 8) {
             ZStack {
                 RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Theme.pad)
                 RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Theme.padEdge)
                 HStack(spacing: 0) {
-                    edgeStrip(left)
-                    padReading(left, alignment: .leading)
+                    padReading(first.0, alignment: .leading)
                     Spacer(minLength: 8)
-                    padReading(right, alignment: .trailing)
-                    edgeStrip(right)
+                    padReading(second.0, alignment: .trailing)
                 }
-                .padding(.horizontal, 10).padding(.vertical, 20)
+                .padding(.horizontal, 14).padding(.vertical, 20)
+                ForEach(placed.filter { $0.1 != .off }, id: \.1) { level, side in
+                    edgeStrip(level, side: side)
+                }
                 ForEach(Corner.allCases) { corner in
                     if settings.corners[corner]?.isSet == true {
                         Circle().fill(Theme.accent).frame(width: 5, height: 5)
@@ -191,16 +195,23 @@ struct MenuContent: View {
         let title: String, symbol: String, value: Float, note: String?, color: Color
     }
 
-    private func edgeStrip(_ level: PadLevel) -> some View {
-        GeometryReader { geo in
-            ZStack(alignment: .bottom) {
+    /// A level drawn along the edge it is slid on: bottom to top on a side, left to right
+    /// on the top or bottom.
+    private func edgeStrip(_ level: PadLevel, side: EdgeSide) -> some View {
+        let fill = CGFloat(level.note == nil ? level.value : 0)
+        return GeometryReader { geo in
+            ZStack(alignment: side.horizontal ? .leading : .bottom) {
                 Capsule().fill(Theme.control)
                 Capsule().fill(level.color)
-                    .frame(height: max(6, geo.size.height * CGFloat(level.note == nil ? level.value : 0)))
+                    .frame(width: side.horizontal ? max(6, geo.size.width * fill) : nil,
+                           height: side.horizontal ? nil : max(6, geo.size.height * fill))
                     .shadow(color: level.color.opacity(0.45), radius: 4)
             }
         }
-        .frame(width: 6)
+        .frame(width: side.horizontal ? nil : 6, height: side.horizontal ? 6 : nil)
+        .padding(side.horizontal ? .horizontal : .vertical, 20)
+        .padding(side.horizontal ? .vertical : .horizontal, 8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: side.alignment)
     }
 
     private func padReading(_ level: PadLevel, alignment: HorizontalAlignment) -> some View {
@@ -243,13 +254,17 @@ struct MenuContent: View {
 
         section("Sliding")
         VStack(alignment: .leading, spacing: 10) {
-            row("Swap sides", "Volume left, brightness right.", "arrow.left.arrow.right", $settings.swapSides)
+            sideRow("Volume", "speaker.wave.2.fill", $settings.volumeSide)
             Divider()
-            row("Bottom quarter only", "Ignore touches higher up.", "rectangle.bottomhalf.filled", $settings.bottomQuarter)
+            sideRow("Brightness", "sun.max.fill", $settings.brightnessSide)
+            Divider()
+            row("Ignore while typing", "Palms on the edges do nothing just after a key press.", "keyboard", $settings.typingGuard)
+            Divider()
+            row("Bottom quarter only", "Left and right edges ignore touches higher up.", "rectangle.bottomhalf.filled", $settings.bottomQuarter)
             Divider()
             row("Cursor freeze", "The pointer stays put.", "cursorarrow", $settings.cursorFreeze)
             Divider()
-            slider("Edge width", "\(Int((settings.edgeWidth * 100).rounded()))%", $settings.edgeWidth, 0.06...0.25)
+            slider("Edge width", "\(Int((settings.edgeWidth * 100).rounded()))%", $settings.edgeWidth, 0.04...0.25)
             Text("Hold ⇧⌥ while sliding for fine steps.").font(.system(size: 11)).foregroundStyle(Theme.secondary)
         }
         .card()
@@ -372,6 +387,44 @@ struct MenuContent: View {
         }
     }
 
+    /// A control and the edge it sits on, chosen from a menu.
+    private func sideRow(_ title: String, _ symbol: String, _ side: Binding<EdgeSide>) -> some View {
+        let value = side.wrappedValue
+        let detail = value == .off ? "Not on any edge." : value.horizontal ? "Slide left and right." : "Slide up and down."
+        return HStack(spacing: 10) {
+            icon(symbol)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(.system(size: 13, weight: .medium))
+                Text(detail).font(.system(size: 11)).foregroundStyle(Theme.secondary)
+            }
+            Spacer(minLength: 6)
+            Menu {
+                ForEach(EdgeSide.allCases) { option in
+                    if option == .left { Divider() }
+                    Button {
+                        side.wrappedValue = option
+                    } label: {
+                        if option == value { Label(option.title, systemImage: "checkmark") } else { Text(option.title) }
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(value.title).font(.system(size: 12, weight: .medium))
+                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 8, weight: .semibold))
+                }
+                .foregroundStyle(value == .off ? Theme.secondary : Theme.text)
+                .padding(.horizontal, 10).frame(height: 26)
+                .background(Capsule().fill(Theme.card))
+                .overlay(Capsule().strokeBorder(Theme.stroke))
+                .contentShape(Capsule())
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .accessibilityLabel("\(title) edge: \(value.title)")
+        }
+    }
+
     private func slider(_ title: String, _ value: String, _ binding: Binding<Double>, _ range: ClosedRange<Double>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -412,6 +465,18 @@ struct AppIconImage: View {
             Image(nsImage: image).resizable().interpolation(.high).frame(width: size, height: size)
         } else {
             Image(systemName: "hand.point.up.left.fill").font(.system(size: size * 0.7)).foregroundStyle(Theme.accent)
+        }
+    }
+}
+
+extension EdgeSide {
+    /// Where this edge is inside the little trackpad drawing.
+    var alignment: Alignment {
+        switch self {
+        case .left: .leading
+        case .right: .trailing
+        case .top: .top
+        case .bottom, .off: .bottom
         }
     }
 }

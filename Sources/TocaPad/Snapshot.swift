@@ -23,7 +23,8 @@ enum Snapshot {
         settings.corners = [.topRight: CornerAction(kind: .mute), .topLeft: CornerAction(kind: .missionControl),
                             .bottomRight: CornerAction(kind: .playPause)]
         settings.bottomQuarter = false
-        settings.swapSides = false
+        settings.volumeSide = .right
+        settings.brightnessSide = .left
         let updates = UpdateChecker(appName: "TocaPad", repo: "getguruhat/tocapad-macos")
         let model = HUD.Model()
         model.kind = .volume

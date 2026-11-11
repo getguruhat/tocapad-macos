@@ -13,8 +13,12 @@ the one the keyboard keys show.
 
 ## What it does
 
-- **Volume on the right, brightness on the left.** One finger, sliding up or down. A
+- **Volume on the right, brightness on the left,** sliding up or down with one finger. A
   second finger cancels, so scrolling and other gestures still work.
+- **Choose the edges:** put each control on the left, right, top or bottom edge, or turn it
+  off. The top and bottom edges slide left and right.
+- **Ignore while typing** (on by default): an edge touch that starts just after a key press
+  does nothing, so a resting palm can't change the volume.
 - **Haptic feedback:** a light tick under your finger at each step, on Force Touch trackpads.
 - **Cursor freeze:** the pointer stays where it was while you slide.
 - **Fine steps:** hold Shift-Option while sliding.
@@ -24,9 +28,8 @@ the one the keyboard keys show.
   the same double tap is also a double-click where the pointer is.
   With tap to click on, a double-click on something in that corner mutes too, which is why
   it starts off.
-- **Bottom quarter only:** only the lower part of the edges responds, if you rest your
-  fingers on the trackpad's sides.
-- **Swap sides:** volume on the left, brightness on the right.
+- **Bottom quarter only:** only the lower part of the left and right edges responds, if you
+  rest your fingers on the trackpad's sides.
 - **Sensitivity** and **edge width** sliders, and **Open at login**.
 - Works with the built-in trackpad and a Magic Trackpad, including one connected after
   TocaPad starts.

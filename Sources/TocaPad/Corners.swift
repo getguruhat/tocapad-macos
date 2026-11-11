@@ -146,8 +146,8 @@ enum Actions {
         case .playPause: mediaKey(16)
         case .nextTrack: mediaKey(17)
         case .previousTrack: mediaKey(18)
-        case .missionControl: openApp("/System/Applications/Mission Control.app")
-        case .showDesktop: missionControl(argument: "1")
+        case .missionControl: dock("com.apple.expose.awake")
+        case .showDesktop: dock("com.apple.showdesktop.awake")
         case .lockScreen: lockScreen()
         case .screenshot: openApp("/System/Applications/Utilities/Screenshot.app")
         case .openApp: if let path = action.appPath { openApp(path) }
@@ -161,12 +161,13 @@ enum Actions {
         NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: path), configuration: NSWorkspace.OpenConfiguration())
     }
 
-    /// Mission Control's own binary takes 1 for Show Desktop and 2 for App Exposé.
-    private static func missionControl(argument: String) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/System/Applications/Mission Control.app/Contents/MacOS/Mission Control")
-        process.arguments = [argument]
-        try? process.run()
+    /// Asks the Dock to toggle one of its views, as the Mission Control key and the
+    /// Show Desktop gesture do, so a second double tap puts everything back.
+    private static func dock(_ notification: String) {
+        typealias Send = @convention(c) (CFString, Int32) -> Void
+        _ = dlopen("/System/Library/Frameworks/ApplicationServices.framework/Frameworks/HIServices.framework/HIServices", RTLD_NOW)
+        guard let sym = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CoreDockSendNotification") else { return }
+        unsafeBitCast(sym, to: Send.self)(notification as CFString, 0)
     }
 
     private static func lockScreen() {

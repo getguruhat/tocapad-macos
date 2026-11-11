@@ -49,6 +49,12 @@ Download `TocaPad-<version>-Installer.dmg` from the [latest release](../../relea
 or from [guruhat.com/apps/tocapad](https://guruhat.com/apps/tocapad/), open it, and drag
 `TocaPad.app` onto Applications.
 
+Or with Homebrew:
+
+```sh
+brew install --cask getguruhat/tap/tocapad
+```
+
 The app isn't notarized by Apple, so macOS blocks the first launch. Open **System Settings ›
 Privacy & Security** and click **Open Anyway** (once). TocaPad is open source: you can read
 every line or build it yourself.

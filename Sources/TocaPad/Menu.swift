@@ -10,10 +10,10 @@ final class MenuState: ObservableObject {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .levels: "Levels"
-            case .edges: "Edges"
-            case .corners: "Corners"
-            case .general: "General"
+            case .levels: Strings.current.tabLevels
+            case .edges: Strings.current.tabEdges
+            case .corners: Strings.current.tabCorners
+            case .general: Strings.current.tabGeneral
             }
         }
         var symbol: String {
@@ -102,7 +102,7 @@ struct MenuContent: View {
     /// A missing trackpad or a new version, shown above every tab.
     @ViewBuilder private var notices: some View {
         if status.trackpads == 0 {
-            Label("No trackpad found. TocaPad needs a built-in or Magic Trackpad.", systemImage: "exclamationmark.triangle.fill")
+            Label(Strings.current.noTrackpad, systemImage: "exclamationmark.triangle.fill")
                 .font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.orange)
                 .fixedSize(horizontal: false, vertical: true)
                 .card()
@@ -111,7 +111,7 @@ struct MenuContent: View {
             Link(destination: update.page) {
                 HStack {
                     Image(systemName: "arrow.down.circle.fill").font(.system(size: 18)).foregroundStyle(Theme.accent)
-                    Text("TocaPad \(update.version) is available").font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.text)
+                    Text(Strings.fill(Strings.current.updateBadge, update.version)).font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.text)
                     Spacer()
                     Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.secondary)
                 }
@@ -124,9 +124,9 @@ struct MenuContent: View {
     @ViewBuilder private var levelsTab: some View {
         levels
         VStack(alignment: .leading, spacing: 10) {
-            row("Haptic feedback", "A light tick as you slide.", "waveform", $settings.haptics)
+            row(Strings.current.haptics, Strings.current.hapticsDetail, "waveform", $settings.haptics)
             Divider()
-            slider("Sensitivity", String(format: "%.1f×", settings.sensitivity), $settings.sensitivity, 0.5...3)
+            slider(Strings.current.sensitivity, String(format: "%.1f×", settings.sensitivity), $settings.sensitivity, 0.5...3)
         }
         .card()
     }
@@ -137,8 +137,8 @@ struct MenuContent: View {
                 AppIconImage(size: 18)
                 Text("TocaPad").font(.system(size: 13, weight: .semibold))
                 Spacer(minLength: 4)
-                Toggle("TocaPad on", isOn: $settings.enabled).toggleStyle(AccentSwitch(width: 32)).labelsHidden()
-                    .help(settings.enabled ? "Turn TocaPad off" : "Turn TocaPad on")
+                Toggle(Strings.current.enabledSwitch, isOn: $settings.enabled).toggleStyle(AccentSwitch(width: 32)).labelsHidden()
+                    .help(settings.enabled ? Strings.current.turnOff : Strings.current.turnOn)
             }
             .padding(.leading, 12).padding(.trailing, 8)
             .frame(maxWidth: .infinity, minHeight: 30)
@@ -147,22 +147,22 @@ struct MenuContent: View {
 
             Button { AboutWindowController.shared.show() } label: { Image(systemName: "info") }
                 .buttonStyle(CircleButtonStyle())
-                .help("About TocaPad").accessibilityLabel("About TocaPad")
+                .help(Strings.current.about).accessibilityLabel(Strings.current.about)
 
             Button { NSApp.terminate(nil) } label: { Image(systemName: "power") }
                 .buttonStyle(CircleButtonStyle())
-                .help("Quit TocaPad").accessibilityLabel("Quit TocaPad")
+                .help(Strings.current.quit).accessibilityLabel(Strings.current.quit)
         }
     }
 
     /// The levels drawn on a little trackpad: each edge filled as far as its level, the
     /// way you'd slide it, with a dot in every corner that has a tap set.
     private var levels: some View {
-        let brightness = PadLevel(title: "Brightness", symbol: "sun.max.fill", value: status.brightness,
-                                  note: status.brightnessAdjustable ? nil : "Not adjustable", color: Theme.orange)
-        let volume = PadLevel(title: "Volume", symbol: status.muted ? "speaker.slash.fill" : "speaker.wave.2.fill",
+        let brightness = PadLevel(title: Strings.current.brightness, symbol: "sun.max.fill", value: status.brightness,
+                                  note: status.brightnessAdjustable ? nil : Strings.current.notAdjustable, color: Theme.orange)
+        let volume = PadLevel(title: Strings.current.volume, symbol: status.muted ? "speaker.slash.fill" : "speaker.wave.2.fill",
                               value: status.volume,
-                              note: !status.volumeAdjustable ? "Not adjustable" : status.muted ? "Muted" : nil,
+                              note: !status.volumeAdjustable ? Strings.current.notAdjustable : status.muted ? Strings.current.muted : nil,
                               color: Theme.accent)
         // Readings read left to right in the order their edges sit on the pad.
         let rank: [EdgeSide: Int] = [.left: 0, .top: 1, .bottom: 1, .off: 1, .right: 2]
@@ -194,7 +194,7 @@ struct MenuContent: View {
             }
             .frame(height: 118)
             .accessibilityElement(children: .combine)
-            Text("Slide an edge. The middle still points and clicks.")
+            Text(Strings.current.slideHint)
                 .font(.system(size: 11)).foregroundStyle(Theme.secondary)
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
@@ -256,7 +256,7 @@ struct MenuContent: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: tab.symbol).font(.system(size: 10, weight: .semibold))
-                        Text(tab.title).font(.system(size: 12, weight: .medium)).lineLimit(1).fixedSize()
+                        Text(tab.title).font(.system(size: 12, weight: .medium)).lineLimit(1).minimumScaleFactor(0.8)
                     }
                     .foregroundStyle(selected ? Color.white : Theme.secondary)
                     .frame(maxWidth: .infinity).frame(height: 26)
@@ -276,25 +276,25 @@ struct MenuContent: View {
 
     @ViewBuilder private var edgesTab: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sideRow("Volume", "speaker.wave.2.fill", $settings.volumeSide)
+            sideRow(Strings.current.volume, "speaker.wave.2.fill", $settings.volumeSide)
             Divider()
-            sideRow("Brightness", "sun.max.fill", $settings.brightnessSide)
+            sideRow(Strings.current.brightness, "sun.max.fill", $settings.brightnessSide)
             Divider()
-            row("Ignore while typing", "Palms on the edges do nothing just after a key press.", "keyboard", $settings.typingGuard)
+            row(Strings.current.typingGuard, Strings.current.typingGuardDetail, "keyboard", $settings.typingGuard)
             Divider()
-            row("Bottom quarter only", "Left and right edges ignore touches higher up.", "rectangle.bottomhalf.filled", $settings.bottomQuarter)
+            row(Strings.current.bottomQuarter, Strings.current.bottomQuarterDetail, "rectangle.bottomhalf.filled", $settings.bottomQuarter)
             Divider()
-            row("Cursor freeze", "The pointer stays put.", "cursorarrow", $settings.cursorFreeze)
+            row(Strings.current.cursorFreeze, Strings.current.cursorFreezeDetail, "cursorarrow", $settings.cursorFreeze)
             Divider()
-            slider("Edge width", "\(Int((settings.edgeWidth * 100).rounded()))%", $settings.edgeWidth, 0.04...0.25)
-            Text("Hold ⇧⌥ while sliding for fine steps.").font(.system(size: 11)).foregroundStyle(Theme.secondary)
+            slider(Strings.current.edgeWidth, "\(Int((settings.edgeWidth * 100).rounded()))%", $settings.edgeWidth, 0.04...0.25)
+            Text(Strings.current.fineSteps).font(.system(size: 11)).foregroundStyle(Theme.secondary)
         }
         .card()
     }
 
     @ViewBuilder private var cornersTab: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Double-tap a corner of the trackpad to run an action.")
+            Text(Strings.current.cornersIntro)
                 .font(.system(size: 12)).foregroundStyle(Theme.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             // Laid out like the trackpad itself.
@@ -305,14 +305,14 @@ struct MenuContent: View {
             if needsAccess {
                 HStack(spacing: 8) {
                     Image(systemName: "lock.shield.fill").foregroundStyle(Theme.orange)
-                    Text("Media keys and shortcuts need Accessibility access.")
+                    Text(Strings.current.needsAccessibility)
                         .font(.system(size: 11)).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 4)
-                    Button("Allow…") { Actions.requestAccess() }.controlSize(.small)
+                    Button(Strings.current.allow) { Actions.requestAccess() }.controlSize(.small)
                 }
             }
             if settings.corners.values.contains(where: \.isSet) {
-                Text("With tap to click on, a double tap is also a double-click where the pointer is.")
+                Text(Strings.current.doubleClickNote)
                     .font(.system(size: 11)).foregroundStyle(Theme.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -322,11 +322,11 @@ struct MenuContent: View {
 
     @ViewBuilder private var generalTab: some View {
         VStack(alignment: .leading, spacing: 10) {
-            row("Open at login", "Starts when you log in.", "power", $settings.openAtLogin)
+            row(Strings.current.openAtLogin, Strings.current.openAtLoginDetail, "power", $settings.openAtLogin)
             Divider()
-            row("Show in menu bar",
-                settings.showInMenuBar ? "The TocaPad icon at the top of the screen."
-                                       : "Hidden. Open TocaPad from Applications to come back here.",
+            row(Strings.current.showInMenuBar,
+                settings.showInMenuBar ? Strings.current.menuBarShown
+                                       : Strings.current.menuBarHidden,
                 "menubar.rectangle", $settings.showInMenuBar)
         }
         .card()
@@ -349,7 +349,7 @@ struct MenuContent: View {
                 if corner.isLeft { Spacer(minLength: 0) }
             }
             if recording {
-                Text("Press keys · ⎋")
+                Text(Strings.current.pressKeys)
                     .font(.system(size: 12, weight: .medium)).foregroundStyle(Theme.accent)
                     .frame(maxWidth: .infinity).frame(height: 26)
                     .background(Capsule().fill(Theme.accent.opacity(0.12)))
@@ -380,7 +380,7 @@ struct MenuContent: View {
                 }
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
-                .accessibilityLabel("\(corner.title) corner: \(action.title)")
+                .accessibilityLabel(Strings.fill(Strings.current.cornerAccessibility, corner.title, action.title))
             }
         }
         .padding(8)
@@ -413,7 +413,7 @@ struct MenuContent: View {
     /// A control and the edge it sits on, chosen from a menu.
     private func sideRow(_ title: String, _ symbol: String, _ side: Binding<EdgeSide>) -> some View {
         let value = side.wrappedValue
-        let detail = value == .off ? "Not on any edge." : value.horizontal ? "Slide left and right." : "Slide up and down."
+        let detail = value == .off ? Strings.current.notOnEdge : value.horizontal ? Strings.current.slideSideways : Strings.current.slideVertical
         return HStack(spacing: 10) {
             icon(symbol)
             VStack(alignment: .leading, spacing: 1) {
@@ -444,7 +444,7 @@ struct MenuContent: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .accessibilityLabel("\(title) edge: \(value.title)")
+            .accessibilityLabel(Strings.fill(Strings.current.edgeAccessibility, title, value.title))
         }
     }
 

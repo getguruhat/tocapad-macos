@@ -14,7 +14,7 @@ final class AboutWindowController {
         }
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 390, height: 400),
                               styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        window.title = "About TocaPad"
+        window.title = Strings.current.about
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: AboutView())
         window.center()
@@ -33,16 +33,16 @@ struct AboutView: View {
                 Image(nsImage: icon).resizable().scaledToFit().frame(width: 88, height: 88)
             }
             Text("TocaPad").font(.title2).bold()
-            Text("Version \(appVersion)").foregroundStyle(.secondary)
-            Text("Slide the trackpad edges for volume and brightness, and double-tap a corner for media keys, Mission Control, apps and shortcuts.")
+            Text(Strings.fill(Strings.current.version, appVersion)).foregroundStyle(.secondary)
+            Text(Strings.current.summary)
                 .font(.headline)
                 .multilineTextAlignment(.center)
-            Text("A GuruHat tool").font(.subheadline).foregroundStyle(.secondary)
+            Text(Strings.current.tagline).font(.subheadline).foregroundStyle(.secondary)
             Divider().padding(.vertical, 6)
             Link(destination: donationURL) {
-                Label("Support TocaPad", systemImage: "heart.fill").frame(maxWidth: .infinity)
+                Label(Strings.current.support, systemImage: "heart.fill").frame(maxWidth: .infinity)
             }
-            Text("Thank you for supporting this project!")
+            Text(Strings.current.thanks)
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding(28)

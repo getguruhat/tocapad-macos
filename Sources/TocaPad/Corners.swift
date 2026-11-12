@@ -9,10 +9,10 @@ enum Corner: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .topLeft: return "Top left"
-        case .topRight: return "Top right"
-        case .bottomLeft: return "Bottom left"
-        case .bottomRight: return "Bottom right"
+        case .topLeft: return Strings.current.topLeft
+        case .topRight: return Strings.current.topRight
+        case .bottomLeft: return Strings.current.bottomLeft
+        case .bottomRight: return Strings.current.bottomRight
         }
     }
 
@@ -60,7 +60,7 @@ struct CornerAction: Codable, Equatable {
         switch kind {
         case .openApp:
             guard let appPath else { return Self.title(.openApp) }
-            return "Open " + FileManager.default.displayName(atPath: appPath).replacingOccurrences(of: ".app", with: "")
+            return Strings.fill(Strings.current.openNamedApp, FileManager.default.displayName(atPath: appPath).replacingOccurrences(of: ".app", with: ""))
         case .shortcut:
             guard let keyName else { return Self.title(.shortcut) }
             return Self.modifierSymbols(modifiers ?? 0) + keyName
@@ -73,17 +73,17 @@ struct CornerAction: Codable, Equatable {
 
     static func title(_ kind: Kind) -> String {
         switch kind {
-        case .none: return "Nothing"
-        case .mute: return "Mute"
-        case .playPause: return "Play or pause"
-        case .nextTrack: return "Next track"
-        case .previousTrack: return "Previous track"
-        case .missionControl: return "Mission Control"
-        case .showDesktop: return "Show desktop"
-        case .lockScreen: return "Lock screen"
-        case .screenshot: return "Screenshot"
-        case .openApp: return "Open an app…"
-        case .shortcut: return "Keyboard shortcut…"
+        case .none: return Strings.current.actionNone
+        case .mute: return Strings.current.actionMute
+        case .playPause: return Strings.current.actionPlayPause
+        case .nextTrack: return Strings.current.actionNextTrack
+        case .previousTrack: return Strings.current.actionPreviousTrack
+        case .missionControl: return Strings.current.actionMissionControl
+        case .showDesktop: return Strings.current.actionShowDesktop
+        case .lockScreen: return Strings.current.actionLockScreen
+        case .screenshot: return Strings.current.actionScreenshot
+        case .openApp: return Strings.current.actionOpenApp
+        case .shortcut: return Strings.current.actionShortcut
         }
     }
 

@@ -106,11 +106,11 @@ enum EdgeSide: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .off: "Off"
-        case .left: "Left edge"
-        case .right: "Right edge"
-        case .top: "Top edge"
-        case .bottom: "Bottom edge"
+        case .off: Strings.current.sideOff
+        case .left: Strings.current.sideLeft
+        case .right: Strings.current.sideRight
+        case .top: Strings.current.sideTop
+        case .bottom: Strings.current.sideBottom
         }
     }
     /// Top and bottom edges slide sideways; left and right slide up and down.
@@ -300,7 +300,7 @@ final class EdgeEngine {
             return
         }
         if action.needsAccessibility && !Actions.trusted {
-            hud.message(symbol: "lock.shield", title: "TocaPad needs Accessibility access")
+            hud.message(symbol: "lock.shield", title: Strings.current.needsAccessHUD)
             return
         }
         Actions.run(action)

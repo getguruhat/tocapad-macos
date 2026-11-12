@@ -9,27 +9,17 @@ final class UpdateChecker: ObservableObject {
         let page: URL
     }
 
-    /// The alert's text. Templates take {0} like `Strings.fill`.
-    struct Wording {
-        var title = "{0} {1} is available"
-        var message = "You have version {0}. Download the new version from GitHub?"
-        var download = "Download"
-        var later = "Later"
-    }
-
     @Published private(set) var available: Release?
 
     private let appName: String
     private let latestURL: URL
-    private let wording: Wording
     private var timer: Timer?
     private static let announcedKey = "updateAnnouncedVersion"
 
     /// - Parameter repo: "owner/name" on GitHub.
-    init(appName: String, repo: String, wording: Wording = Wording()) {
+    init(appName: String, repo: String) {
         self.appName = appName
         latestURL = URL(string: "https://api.github.com/repos/\(repo)/releases/latest")!
-        self.wording = wording
     }
 
     var currentVersion: String {
@@ -67,10 +57,10 @@ final class UpdateChecker: ObservableObject {
         defaults.set(release.version, forKey: UpdateChecker.announcedKey)
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
-        alert.messageText = UpdateChecker.fill(wording.title, appName, release.version)
-        alert.informativeText = UpdateChecker.fill(wording.message, currentVersion)
-        alert.addButton(withTitle: wording.download)
-        alert.addButton(withTitle: wording.later)
+        alert.messageText = Strings.fill(Strings.current.updateTitle, appName, release.version)
+        alert.informativeText = Strings.fill(Strings.current.updateMessage, currentVersion)
+        alert.addButton(withTitle: Strings.current.download)
+        alert.addButton(withTitle: Strings.current.later)
         if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(release.page) }
     }
 
@@ -91,13 +81,5 @@ final class UpdateChecker: ObservableObject {
             if x != y { return x > y }
         }
         return false
-    }
-
-    private static func fill(_ template: String, _ values: String...) -> String {
-        var text = template
-        for (index, value) in values.enumerated() {
-            text = text.replacingOccurrences(of: "{\(index)}", with: value)
-        }
-        return text
     }
 }

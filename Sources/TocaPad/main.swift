@@ -195,8 +195,8 @@ final class MenuController: NSObject {
     private func chooseApp(for corner: Corner) {
         close()
         let open = NSOpenPanel()
-        open.title = "Choose an app for the \(corner.title.lowercased()) corner"
-        open.prompt = "Choose"
+        open.title = Strings.fill(Strings.current.chooseAppTitle, corner.title.lowercased())
+        open.prompt = Strings.current.choose
         open.allowedContentTypes = [.application]
         open.directoryURL = URL(fileURLWithPath: "/Applications")
         NSApp.activate(ignoringOtherApps: true)
@@ -292,7 +292,7 @@ struct AccentSwitch: ToggleStyle {
         .buttonStyle(.plain)
         .accessibilityElement()
         .accessibilityAddTraits(.isButton)
-        .accessibilityValue(configuration.isOn ? "On" : "Off")
+        .accessibilityValue(configuration.isOn ? Strings.current.on : Strings.current.off)
     }
 }
 

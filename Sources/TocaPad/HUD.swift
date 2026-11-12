@@ -100,7 +100,7 @@ struct HUDView: View {
         model.kind == .brightness ? Color(red: 0.96, green: 0.62, blue: 0.04) : Color(red: 0.263, green: 0.384, blue: 1.0)
     }
 
-    private var title: String { model.kind == .volume ? "Sound" : "Display" }
+    private var title: String { model.kind == .volume ? Strings.current.sound : Strings.current.display }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -124,7 +124,7 @@ struct HUDView: View {
                 HStack {
                     Text(title).font(.system(size: 13, weight: .semibold))
                     Spacer()
-                    Text(model.unavailable ? "Not adjustable" : model.muted ? "Muted" : "\(Int((model.value * 100).rounded()))%")
+                    Text(model.unavailable ? Strings.current.notAdjustable : model.muted ? Strings.current.muted : "\(Int((model.value * 100).rounded()))%")
                         .font(.system(size: 12, weight: .medium).monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
